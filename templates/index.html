@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>जार्विस - हिंदी एआई असिस्टेंट</title>
+  <title>Jarvis - AI Assistant</title>
   <style>
     body {
       background: #0d0d0d;
@@ -14,10 +14,12 @@
       align-items: center;
       padding: 20px;
     }
+
     h1 {
       color: #00ffff;
       margin-bottom: 10px;
     }
+
     img {
       width: 150px;
       border-radius: 50%;
@@ -25,10 +27,12 @@
       border: 3px solid #00ffff;
       transition: transform 0.3s ease-in-out;
     }
+
     .talking {
       transform: scale(1.1);
       box-shadow: 0 0 15px #00ffff;
     }
+
     #prompt {
       width: 80%;
       padding: 10px;
@@ -37,6 +41,7 @@
       border: none;
       font-size: 16px;
     }
+
     button {
       margin: 10px 5px;
       padding: 10px 20px;
@@ -47,9 +52,11 @@
       border-radius: 5px;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #00dddd;
     }
+
     #chatbox {
       max-height: 400px;
       overflow-y: auto;
@@ -59,15 +66,18 @@
       border-radius: 10px;
       margin-top: 20px;
     }
+
     .bubble {
       margin: 10px 0;
       padding: 10px;
       border-radius: 10px;
     }
+
     .user {
       background-color: #003366;
       text-align: right;
     }
+
     .bot {
       background-color: #004d4d;
       text-align: left;
@@ -75,13 +85,13 @@
   </style>
 </head>
 <body>
-  <h1>नमस्ते! मैं जार्विस हूँ 🤖</h1>
-  <img id="avatar" src="{{ url_for('static', filename='sahil.jpg') }}" alt="साहिल">
+  <h1>Hello! I am Jarvis 🤖</h1>
+  <img id="avatar" src="{{ url_for('static', filename='sahil.jpg') }}" alt="Jarvis Avatar">
 
-  <input type="text" id="prompt" placeholder="अपना सवाल लिखें...">
+  <input type="text" id="prompt" placeholder="Type your question here...">
   <div>
-    <button onclick="askJarvis()">भेजें</button>
-    <button onclick="startListening()">🎤 बोलें</button>
+    <button onclick="askJarvis()">Send</button>
+    <button onclick="startListening()">🎤 Speak</button>
   </div>
 
   <div id="chatbox"></div>
@@ -95,7 +105,7 @@
       if (!prompt.trim()) return;
 
       const chatbox = document.getElementById("chatbox");
-      chatbox.innerHTML += `<div class="bubble user"><b>🧑‍💻 आप:</b> ${prompt}</div>`;
+      chatbox.innerHTML += `<div class="bubble user"><b>🧑 You:</b> ${prompt}</div>`;
 
       fetch("/ask", {
         method: "POST",
@@ -105,13 +115,13 @@
       .then(res => res.json())
       .then(data => {
         const reply = data.reply;
-        chatbox.innerHTML += `<div class="bubble bot"><b>🤖 जार्विस:</b> ${reply}</div>`;
+        chatbox.innerHTML += `<div class="bubble bot"><b>🤖 Jarvis:</b> ${reply}</div>`;
         chatbox.scrollTop = chatbox.scrollHeight;
 
         const utter = new SpeechSynthesisUtterance(reply);
-        utter.lang = 'hi-IN';
+        utter.lang = 'en-US';
         const voices = synth.getVoices();
-        utter.voice = voices.find(v => v.lang === 'hi-IN') || voices[0];
+        utter.voice = voices.find(v => v.lang === 'en-US') || voices[0];
 
         avatar.classList.add("talking");
         synth.speak(utter);
@@ -119,24 +129,23 @@
       });
     }
 
-    // 🎤 Mic voice input
     let recognition;
 
     function startListening() {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert("आपका ब्राउज़र वॉइस रिकग्निशन सपोर्ट नहीं करता। कृपया Chrome का उपयोग करें।");
+        alert("Your browser does not support voice recognition. Please use Chrome.");
         return;
       }
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
-      recognition.lang = 'hi-IN';
+      recognition.lang = 'en-US';
       recognition.interimResults = false;
 
       recognition.start();
 
       recognition.onstart = () => {
-        console.log("🎤 वॉइस इनपुट शुरू...");
+        console.log("🎤 Voice input started...");
       };
 
       recognition.onresult = function(event) {
@@ -146,16 +155,15 @@
       };
 
       recognition.onerror = function(event) {
-        console.error("❌ माइक एरर:", event.error);
-        alert("माइक से इनपुट प्राप्त नहीं हो सका। कृपया अनुमति दें और फिर प्रयास करें।");
+        console.error("❌ Mic error:", event.error);
+        alert("Could not get input from mic. Please allow mic access and try again.");
       };
 
       recognition.onend = () => {
-        console.log("🎤 वॉइस इनपुट बंद");
+        console.log("🎤 Voice input ended");
       };
     }
 
-    // Load voices
     window.speechSynthesis.onvoiceschanged = () => {};
   </script>
 </body>
