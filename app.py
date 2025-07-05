@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import json
 import re
+import os
 
 app = Flask(__name__)
 
-# === OpenRouter API Configuration ===
-API_KEY = "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"
+# ✅ API key from environment variable (set in Render)
+API_KEY = os.getenv("API_KEY")
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 HEADERS = {
@@ -16,39 +17,24 @@ HEADERS = {
     "X-Title": "Jarvis Assistant"
 }
 
-# === Clean up AI's response text
+# ✅ Clean the AI response
 def clean_response(text):
     text = re.sub(r'\\n|\n|\r', ' ', text)
     text = re.sub(r'[*_#>\[\]{}|]', '', text)
     text = re.sub(r'\s{2,}', ' ', text)
     return text.strip()
 
-# === Main Jarvis logic
+# ✅ Ask Jarvis logic
 def ask_jarvis(prompt):
     prompt_lower = prompt.lower().strip()
 
-    # ✅ Custom response for Sahil
-    if any(phrase in prompt_lower for phrase in [
-        "who is your developer", "who made you", "who created you", "who is your maker",
-        "तुम्हें किसने बनाया", "तुम्हारे निर्माता कौन हैं"
-    ]):
+    # Custom replies
+    if any(phrase in prompt_lower for phrase in ["who is your developer", "who made you", "तुम्हें किसने बनाया"]):
         return (
-            "मेरे निर्माता साहिल गोहेल हैं — एक इंजीनियरिंग छात्र जिनमें टेक्नोलॉजी, क्रिएटिविटी और इनोवेशन के प्रति गहरी रुचि है। "
-            "वो न केवल प्रोग्रामिंग और AI में माहिर हैं, बल्कि यूजर एक्सपीरियंस डिज़ाइन में भी उनकी खास समझ है। "
-            "मुझे गर्व है कि उन्होंने मुझे बनाया।"
+            "मेरे निर्माता साहिल गोहेल हैं — एक इंजीनियरिंग छात्र जिनमें टेक्नोलॉजी, क्रिएटिविटी और इनोवेशन के प्रति गहरी रुचि है।"
         )
 
-    # ✅ Custom response for Manoj Gohel
-    if any(phrase in prompt_lower for phrase in [
-        "who is sahil's father", "who is my dad", "who manoj gohel", "manoj gohel kon chhe",
-        "साहिल के पापा कौन हैं", "मनोज गोहेल कौन हैं"
-    ]):
-        return (
-            "साहिल गोहेल के पिता का नाम मनोज गोहेल है। वे एक सरकारी कर्मचारी हैं और अपने काम में बहुत ही निपुण हैं। "
-            "वे एक अच्छे पिता और एक नेक इंसान हैं। और हाँ, वह विमल बहुत पसंद करते हैं!"
-        )
-
-    # 🧠 Default API response
+    # AI Response
     data = {
         "model": "mistralai/mistral-7b-instruct:free",
         "messages": [
@@ -63,19 +49,11 @@ def ask_jarvis(prompt):
     try:
         res = requests.post(API_URL, headers=HEADERS, data=json.dumps(data))
         result = res.json()
-
-        # ✅ Safely check if 'choices' is available
-        if "choices" in result:
-            reply = result["choices"][0]["message"]["content"]
-            return clean_response(reply)
-        elif "error" in result:
-            return f"⚠️ एरर: {result['error'].get('message', 'कुछ गलत हुआ')}"
-        else:
-            return "⚠️ उत्तर प्राप्त नहीं हुआ, कृपया बाद में प्रयास करें।"
+        reply = result["choices"][0]["message"]["content"]
+        return clean_response(reply)
     except Exception as e:
-        return f"⚠️ त्रुटि: {str(e)}"
+        return f"⚠️ एरर: {str(e)}"
 
-# === Flask routes
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -87,6 +65,5 @@ def ask():
     reply = ask_jarvis(prompt)
     return jsonify({"reply": reply})
 
-# === Local run for testing (you can update host later for deployment)
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
