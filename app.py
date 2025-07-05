@@ -23,11 +23,11 @@ def clean_response(text):
     text = re.sub(r'\s{2,}', ' ', text)
     return text.strip()
 
-# === Handle Jarvis response logic
+# === Main Jarvis logic
 def ask_jarvis(prompt):
     prompt_lower = prompt.lower().strip()
 
-    # ✅ Custom response for Sahil Gohel
+    # ✅ Custom response for Sahil
     if any(phrase in prompt_lower for phrase in [
         "who is your developer", "who made you", "who created you", "who is your maker",
         "तुम्हें किसने बनाया", "तुम्हारे निर्माता कौन हैं"
@@ -47,19 +47,8 @@ def ask_jarvis(prompt):
             "साहिल गोहेल के पिता का नाम मनोज गोहेल है। वे एक सरकारी कर्मचारी हैं और अपने काम में बहुत ही निपुण हैं। "
             "वे एक अच्छे पिता और एक नेक इंसान हैं। और हाँ, वह विमल बहुत पसंद करते हैं!"
         )
-    if any(phrase in prompt_lower for phrase in [
-        "who is sahil's mother", "who is my mom", "who bhavana gohel", "bhavana gohel kon chhe",
-        "साहिल के माता  कौन हैं", "भावना गोहेल कौन हैं"
-    ]):
-        return (
-            "मेरी मम्मी एक full-time housewife हैं।"
-             " बहुत sweet हैं, दिल की भी kind हैं… लेकिन सोने में तो world record तोड़ दें! दिन हो या रात, बस सोती रहती हैं"
-             "और वो भी बिना snoring के तो नींद पूरी ही नहीं होती! कभी-कभी लगता है उनकी snoring को Dolby Atmos में सुना जाए  लेकिन फिर भी,"
-              " उनकी ममता और प्यार का कोई मुकाबला नहीं है!"
-            
-        )
 
-    # 🧠 Default AI response in Hindi
+    # 🧠 Default API response
     data = {
         "model": "mistralai/mistral-7b-instruct:free",
         "messages": [
@@ -74,8 +63,15 @@ def ask_jarvis(prompt):
     try:
         res = requests.post(API_URL, headers=HEADERS, data=json.dumps(data))
         result = res.json()
-        reply = result["choices"][0]["message"]["content"]
-        return clean_response(reply)
+
+        # ✅ Safely check if 'choices' is available
+        if "choices" in result:
+            reply = result["choices"][0]["message"]["content"]
+            return clean_response(reply)
+        elif "error" in result:
+            return f"⚠️ एरर: {result['error'].get('message', 'कुछ गलत हुआ')}"
+        else:
+            return "⚠️ उत्तर प्राप्त नहीं हुआ, कृपया बाद में प्रयास करें।"
     except Exception as e:
         return f"⚠️ त्रुटि: {str(e)}"
 
@@ -91,6 +87,6 @@ def ask():
     reply = ask_jarvis(prompt)
     return jsonify({"reply": reply})
 
-# === Run on local IP for phone access
+# === Local run for testing (you can update host later for deployment)
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
