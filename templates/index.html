@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>जार्विस - हिंदी एआई असिस्टेंट</title>
+  <style>
+    body {
+      background: #0d0d0d;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #00ffff;
+      margin-bottom: 10px;
+    }
+
+    img {
+      width: 150px;
+      border-radius: 50%;
+      margin: 15px 0;
+      border: 3px solid #00ffff;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .talking {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px #00ffff;
+    }
+
+    #prompt {
+      width: 80%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      margin: 10px 5px;
+      padding: 10px 20px;
+      background-color: #00ffff;
+      border: none;
+      color: black;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #00dddd;
+    }
+
+    #chatbox {
+      max-height: 400px;
+      overflow-y: auto;
+      width: 90%;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    .bubble {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .user {
+      background-color: #003366;
+      text-align: right;
+    }
+
+    .bot {
+      background-color: #004d4d;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>नमस्ते! मैं जार्विस हूँ 🤖</h1>
+  <img id="avatar" src="{{ url_for('static', filename='sahil.jpg') }}" alt="साहिल">
+
+  <input type="text" id="prompt" placeholder="अपना सवाल लिखें...">
+  <div>
+    <button onclick="askJarvis()">भेजें</button>
+    <button onclick="startListening()">🎤 बोलें</button>
+  </div>
+
+  <div id="chatbox"></div>
+
+  <script>
+    const synth = window.speechSynthesis;
+    const avatar = document.getElementById("avatar");
+
+    function askJarvis() {
+      const prompt = document.getElementById("prompt").value;
+      if (!prompt.trim()) return;
+
+      const chatbox = document.getElementById("chatbox");
+      chatbox.innerHTML += `<div class="bubble user"><b>🧑‍💻 आप:</b> ${prompt}</div>`;
+
+      fetch("/ask", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({prompt})
+      })
+      .then(res => res.json())
+      .then(data => {
+        const reply = data.reply;
+        chatbox.innerHTML += `<div class="bubble bot"><b>🤖 जार्विस:</b> ${reply}</div>`;
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        const utter = new SpeechSynthesisUtterance(reply);
+        utter.lang = 'hi-IN';
+        const voices = synth.getVoices();
+        utter.voice = voices.find(v => v.lang === 'hi-IN') || voices[0];
+
+        avatar.classList.add("talking");
+        synth.speak(utter);
+        utter.onend = () => avatar.classList.remove("talking");
+      });
+    }
+
+    // 🎤 Mic voice input
+    let recognition;
+
+    function startListening() {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("आपका ब्राउज़र वॉइस रिकग्निशन सपोर्ट नहीं करता। कृपया Chrome का उपयोग करें।");
+        return;
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = 'hi-IN';
+      recognition.interimResults = false;
+
+      recognition.start();
+
+      recognition.onstart = () => {
+        console.log("🎤 वॉइस इनपुट शुरू...");
+      };
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("prompt").value = transcript;
+        askJarvis();
+      };
+
+      recognition.onerror = function(event) {
+        console.error("❌ माइक एरर:", event.error);
+        alert("माइक से इनपुट प्राप्त नहीं हो सका। कृपया अनुमति दें और फिर प्रयास करें।");
+      };
+
+      recognition.onend = () => {
+        console.log("🎤 वॉइस इनपुट बंद");
+      };
+    }
+
+    // Load voices
+    window.speechSynthesis.onvoiceschanged = () => {};
+  </script>
+</body>
+</html>
